@@ -40,7 +40,7 @@ let hasEPC = false;
 // --------- Modal (kullanım süresi)
 function openWelcomeModal(){
   const textFromField = $('#kullanimSuresi').textContent.trim();
-  $('#welcomeText').textContent = `Bant ${textFromField}dür çalışıyor.`;
+  $('#welcomeText').textContent = `Bant ${textFromField} süredir çalışıyor.`;
   $('#welcomeModal').classList.add('show');
 }
 $('#closeModal').addEventListener('click', ()=> $('#welcomeModal').classList.remove('show'));
