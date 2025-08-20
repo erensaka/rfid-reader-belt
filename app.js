@@ -7,13 +7,26 @@ function formatNow() {
   return d.toLocaleString('tr-TR', { dateStyle:'short', timeStyle:'short' });
 }
 
-// Kullanım süresini tek kez üret ve her yerde onu kullan
-function makeUsageText() {
+function showToast(msg, timeout=2200){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  window.setTimeout(()=> el.classList.remove('show'), timeout);
+}
+
+// --------- Kalıcı kullanım süresi
+const USAGE_KEY = 'AYIK_USAGE_TEXT_V1';
+function getOrCreateUsageText() {
+  const saved = localStorage.getItem(USAGE_KEY);
+  if (saved) return saved;
+
+  // ilk kez üret — SONRA HEP BUNU KULLAN
   const pick = Math.random() < 0.5 ? 'short' : 'long';
+  let text;
   if (pick === 'short') {
     const days = Math.floor(Math.random()*180) + 1; // 1-180 gün
     const hours = Math.floor(Math.random()*24);
-    return `${days} gün ${hours} saat`;
+    text = `${days} gün ${hours} saat`;
   } else {
     const years = Math.floor(Math.random()*2);
     const months = Math.floor(Math.random()*12);
@@ -22,19 +35,13 @@ function makeUsageText() {
     if (years) parts.push(`${years} yıl`);
     if (months) parts.push(`${months} ay`);
     parts.push(`${days} gün`);
-    return parts.join(' ');
+    text = parts.join(' ');
   }
-}
-
-function showToast(msg, timeout=2200){
-  const el = $('#toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(()=> el.classList.remove('show'), timeout);
+  localStorage.setItem(USAGE_KEY, text);
+  return text;
 }
 
 // --------- Global durum
-let usageText = '';
 let hasEPC = false;
 
 // --------- Modal (kullanım süresi)
@@ -47,9 +54,16 @@ $('#closeModal').addEventListener('click', ()=> $('#welcomeModal').classList.rem
 
 // --------- Başlangıç
 function initHeader(){
+  // Zaman etiketi
   $('#readTime').textContent = formatNow();
-  usageText = makeUsageText();
+
+  // Sabit kullanım süresi
+  const usageText = getOrCreateUsageText();
   $('#kullanimSuresi').textContent = usageText;
+
+  // Kaplama defaultları (güvence)
+  const ust = $('#ustKaplama'); if (ust) ust.textContent = '4 mm';
+  const alt = $('#altKaplama'); if (alt) alt.textContent = '3 mm';
 }
 initHeader();
 openWelcomeModal();
@@ -98,7 +112,7 @@ function renderNotes(){
     li.innerHTML = `
       <div class="note-head">
         <span class="note-meta">${n.ts} • ${n.user}</span>
-        <button class="btn small ghost" data-i="${i}">Sil</button>
+        <button class="btn small ghost" data-i="${i}" aria-label="Notu sil">Sil</button>
       </div>
       <p class="note-text">${n.text}</p>
     `;
@@ -111,7 +125,7 @@ function renderNotes(){
       notes.splice(i,1);
       renderNotes();
       showToast('Not silindi');
-    });
+    }, {passive:true});
   });
 }
 renderNotes();
@@ -125,8 +139,9 @@ const noteSave  = $('#noteSave');
 
 $('#btnAddNote').addEventListener('click', ()=>{
   noteName.value = '';
+  noteText.value = '';
   noteModal.classList.add('show');
-  setTimeout(()=> noteName.focus(), 50);
+  window.setTimeout(()=> noteName.focus(), 50);
 });
 
 noteSave.addEventListener('click', ()=>{
@@ -152,22 +167,19 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'Escape' && noteModal.classList.contains('show')){
     noteModal.classList.remove('show');
   }
-});
+}, {passive:true});
 
 // --------- Fotoğraflar
 const photoInput = $('#photoInput');
 const photoGrid = $('#photoGrid');
 
-// Buraya örnek foto URL’leri veya base64 data URI’ler ekleyebilirsin:
-const samplePhotos = [
-  // 'https://picsum.photos/id/29/800/600',
-  // 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD…'
-];
+// Opsiyonel örnek foto alanı
+const samplePhotos = [];
 
 function addPhotoFromURL(url){
   const d = document.createElement('div');
   d.className = 'photo';
-  d.innerHTML = `<img alt="Fotoğraf" src="${url}"><button class="del" title="Kaldır">×</button>`;
+  d.innerHTML = `<img alt="Fotoğraf" src="${url}"><button class="del" title="Kaldır" aria-label="Fotoğrafı kaldır">×</button>`;
   d.querySelector('.del').addEventListener('click', ()=>{ d.remove(); showToast('Fotoğraf kaldırıldı'); });
   photoGrid.prepend(d);
 }
@@ -186,20 +198,43 @@ photoInput.addEventListener('change', (e)=>{
   if(files.length) showToast(`${files.length} fotoğraf eklendi`);
 });
 
-// --------- Vulkanizasyon eğrisi (otomatik örnek veri)
-const ctx = $('#curveChart').getContext('2d');
+// --------- Vulkanizasyon eğrisi (responsive canvas)
+/* Canvas artık container genişliğine göre çizilecek.
+   - CSS width:100% (styles.css) 
+   - JS: gerçek piksel boyutlarını DPR ile ayarlıyoruz. */
+const canvas = $('#curveChart');
+const ctx = canvas.getContext('2d');
 let curveData = [];
 
+function resizeCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  // Minimum yükseklik, orantı koruma
+  const cssWidth = Math.max(280, rect.width || 320);
+  const cssHeight = Math.max(160, Math.round(cssWidth * 0.5));
+
+  canvas.width  = Math.round(cssWidth * dpr);
+  canvas.height = Math.round(cssHeight * dpr);
+
+  // Görsel boyutu (CSS) — retina keskinliği için scale
+  canvas.style.width  = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawChart();
+}
+
 function drawChart(){
-  const canvas = ctx.canvas;
-  const W = canvas.width, H = canvas.height;
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
   const pad = {l:48, r:16, t:16, b:36};
 
+  // Temizle
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0,0,W,H);
 
-  // eksenler
+  // Eksenler
   ctx.strokeStyle = '#e5e7eb';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -215,7 +250,6 @@ function drawChart(){
     return;
   }
 
-  // ölçekler
   const tMin = 0;
   const tMax = Math.max(...curveData.map(d=>d.t));
   const TMin = Math.min(...curveData.map(d=>d.T));
@@ -223,7 +257,7 @@ function drawChart(){
   const x = t => pad.l + ((W - pad.l - pad.r) * (t - tMin) / (tMax - tMin || 1));
   const y = T => (H - pad.b) - ((H - pad.t - pad.b) * (T - TMin) / (TMax - TMin || 1));
 
-  // grid & etiketler
+  // Grid & etiketler
   ctx.fillStyle = '#6b7280';
   ctx.font = '11px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial';
   ctx.textAlign = 'center';
@@ -244,7 +278,7 @@ function drawChart(){
     ctx.fillText(`${Math.round(TT)}°C`, pad.l-6, yy+4);
   }
 
-  // çizgi (marka mavisi)
+  // Çizgi
   ctx.strokeStyle = '#1E73BE';
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -254,7 +288,7 @@ function drawChart(){
   });
   ctx.stroke();
 
-  // yumuşak dolgu
+  // Dolgu
   const grad = ctx.createLinearGradient(0, pad.t, 0, H-pad.b);
   grad.addColorStop(0,'rgba(30,115,190,.18)');
   grad.addColorStop(1,'rgba(30,115,190,0)');
@@ -269,13 +303,14 @@ function drawChart(){
   ctx.closePath();
   ctx.fill();
 
-  // başlık
+  // Başlık
   ctx.fillStyle = '#000';
   ctx.font = '12px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial';
   ctx.textAlign = 'left';
   ctx.fillText('Vulkanizasyon Eğrisi (Sıcaklık °C / Zaman dk)', pad.l, pad.t+10);
 }
 
+// Örnek veri
 (function buildSampleCurve(){
   const pts = [];
   for(let t=0;t<=60;t+=2){
@@ -286,14 +321,20 @@ function drawChart(){
     pts.push({t, T});
   }
   curveData = pts;
-  drawChart();
+  resizeCanvas();
 })();
+
+// Resize (debounce)
+let _rsz;
+window.addEventListener('resize', ()=>{
+  window.clearTimeout(_rsz);
+  _rsz = window.setTimeout(resizeCanvas, 120);
+}, {passive:true});
 
 // --------- Yeni okuma simülasyonu
 $('#simulateRead').addEventListener('click', ()=>{
+  // "Kullanım Süresi" sabit kalacak (yenilemeyi simüle etmiyoruz)
   $('#readTime').textContent = formatNow();
-  usageText = makeUsageText();
-  $('#kullanimSuresi').textContent = usageText;
   openWelcomeModal();
   showToast('Yeni RFID okuması alındı');
 });
