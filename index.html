@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Ayık Band • RFID Okuma Demo</title>
+  <meta name="description" content="RFID konveyör bant ek okuma demosu — Ayık Band" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <img class="logo" alt="Ayık Band Logo" src="https://www.konveyorbant.com/wp-content/themes/ayik-band/assets/image/logo/logo2.svg" />
+  </header>
+
+  <main class="container">
+    <!-- Toast -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- Bant Bilgisi -->
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h1 class="title">Bant Bilgisi</h1>
+          <p class="subtitle">RFID okundu • <span id="readTime"></span></p>
+        </div>
+        <span id="statusBadge" class="badge">Kullanımda</span>
+      </div>
+
+      <div class="grid">
+        <div class="row">
+          <span class="label">Band ID (Sistem No)</span>
+          <span id="bandId" class="value">AB-2024-000872</span>
+        </div>
+        <div class="row">
+          <span class="label">EPC</span>
+          <span id="epc" class="value muted">—</span>
+        </div>
+        <div class="row">
+          <span class="label">Durum</span>
+          <span id="durum" class="value">Kullanımda</span>
+        </div>
+        <div class="row">
+          <span class="label">Giriş Tarihi</span>
+          <span id="giristarihi" class="value">2024-12-15 08:30</span>
+        </div>
+        <div class="row">
+          <span class="label">Kullanım Süresi</span>
+          <span id="kullanimSuresi" class="value">—</span>
+        </div>
+        <div class="row">
+          <span class="label">Müşteri Adı</span>
+          <span class="value">Kolin Termik</span>
+        </div>
+        <div class="row">
+          <span class="label">Hat İsmi / No</span>
+          <span class="value">Kömür Besleme #3</span>
+        </div>
+        <div class="row">
+          <span class="label">Bant Markası</span>
+          <span class="value">Fenner Dunlop</span>
+        </div>
+        <div class="row">
+          <span class="label">Bant Genişliği</span>
+          <span class="value">1000 mm</span>
+        </div>
+        <div class="row">
+          <span class="label">Mukavemet + Kat Sayısı</span>
+          <span class="value">EP 800/4</span>
+        </div>
+        <div class="row">
+          <span class="label">Karkas Tipi</span>
+          <span class="value">Tekstil (EP)</span>
+        </div>
+        <div class="row">
+          <span class="label">Kaplama Cinsi/Sınıfı</span>
+          <span class="value">DIN Y (Genel)</span>
+        </div>
+        <div class="row">
+          <span class="label">Üst Kaplama</span>
+          <span class="value" id="ustKaplama">4 mm</span>
+        </div>
+        <div class="row">
+          <span class="label">Alt Kaplama</span>
+          <span class="value" id="altKaplama">3 mm</span>
+        </div>
+        <div class="row">
+          <span class="label">Ek Tipi</span>
+          <span class="value">Sıcak Vulkanize, Stepped Finger</span>
+        </div>
+        <div class="row">
+          <span class="label">Ek Boyu</span>
+          <span class="value">420 mm</span>
+        </div>
+        <div class="row">
+          <span class="label">Pres Modeli</span>
+          <span class="value">ALMEX SVP 1200</span>
+        </div>
+        <div class="row">
+          <span class="label">Montaj Personeli</span>
+          <span class="value">3 kişi – A. Yılmaz, B. Öztürk, C. Demir</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="btnBindEPC" class="btn ghost">EPC Eşleştir</button>
+        <button id="btnChangeStatus" class="btn ghost">Durum Değiştir</button>
+      </div>
+    </section>
+
+    <!-- Gözlemler & Ekler -->
+    <section class="card">
+      <div class="card-head">
+        <h2 class="title">Gözlemler & Ekler</h2>
+      </div>
+
+      <!-- Notlar -->
+      <div class="block-head">
+        <h3>Gözlem Notları</h3>
+        <button id="btnAddNote" class="btn small">Yeni Not</button>
+      </div>
+      <ul id="notesList" class="notes"></ul>
+
+      <!-- Fotoğraflar -->
+      <div class="block-head">
+        <h3>Fotoğraflar</h3>
+        <label class="btn small file">
+          <input id="photoInput" type="file" accept="image/*" multiple>
+          Fotoğraf Yükle
+        </label>
+      </div>
+      <div id="photoGrid" class="photos"></div>
+
+      <!-- Vulkanizasyon Eğrisi -->
+      <div class="block-head">
+        <h3>Vulkanizasyon Eğrisi</h3>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="curveChart" width="800" height="400" aria-label="Vulkanizasyon Eğrisi"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal: Kullanım Süresi -->
+  <div id="welcomeModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="welcomeTitle">
+    <div class="modal-card">
+      <h3 id="welcomeTitle">RFID Okundu</h3>
+      <p id="welcomeText">Bant 0 gündür çalışıyor.</p>
+      <button id="closeModal" class="btn">Tamam</button>
+    </div>
+  </div>
+
+  <!-- Modal: Yeni Not (tek hamlede Ad Soyad + Not) -->
+  <div id="noteModal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="noteTitle">
+    <div class="modal-card">
+      <h3 id="noteTitle">Yeni Gözlem Notu</h3>
+      <div class="form">
+        <label class="form-label" for="noteName">Ad Soyad</label>
+        <input id="noteName" class="input" type="text" placeholder="Örn: Ali Yılmaz" />
+        <label class="form-label" for="noteText">Not</label>
+        <textarea id="noteText" class="textarea" rows="4" placeholder="Ek bölgesinde kontrol yapıldı, sorun yok."></textarea>
+      </div>
+      <div class="form-actions">
+        <button id="noteCancel" class="btn ghost">İptal</button>
+        <button id="noteSave" class="btn">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <button id="simulateRead" class="btn wide">Yeni RFID Okuması Simüle Et</button>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
