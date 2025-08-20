@@ -28,6 +28,7 @@ body{
   color:var(--text);
   -webkit-font-smoothing:antialiased;
   text-rendering:optimizeLegibility;
+  line-height:1.4;
 }
 
 /* Top bar */
@@ -69,12 +70,19 @@ body{
 /* Info grid */
 .grid{display:grid; gap:10px; margin-top:10px}
 .row{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:10px 12px; border:1px dashed var(--border); border-radius:12px;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+  padding:12px; border:1px dashed var(--border); border-radius:12px;
   background:#fff;
+  min-height:44px; /* dokunma hedefi */
 }
-.label{color:#6b7280; font-size:12px}
-.value{font-weight:700; font-size:14px; color:var(--text)}
+.label{
+  color:#6b7280; font-size:13px; flex:1 1 48%;
+  overflow-wrap:anywhere;
+}
+.value{
+  font-weight:700; font-size:15px; color:var(--text);
+  flex:1 1 52%; text-align:right; overflow-wrap:anywhere;
+}
 .value.muted{color:#6b7280; font-weight:600}
 
 /* Actions */
@@ -84,9 +92,11 @@ body{
 .btn{
   appearance:none; border:none; outline:none; cursor:pointer;
   background:var(--accent);
-  color:#fff; font-weight:700; padding:10px 14px; border-radius:12px;
+  color:#fff; font-weight:700; padding:12px 14px; border-radius:12px;
   box-shadow:0 6px 16px rgba(30,115,190,.22);
   transition:background .2s ease, transform .08s ease, box-shadow .2s ease, filter .2s ease;
+  min-height:44px; /* dokunma hedefi */
+  font-size:15px;
 }
 .btn:hover{background:var(--accent-dark); transform:translateY(-1px)}
 .btn:active{transform:translateY(0)}
@@ -94,7 +104,7 @@ body{
   background:#fff; color:var(--accent);
   border:1px solid var(--accent); box-shadow:none;
 }
-.btn.small{padding:8px 10px; font-weight:600}
+.btn.small{padding:10px 12px; font-weight:600; min-height:40px; font-size:14px}
 .btn.wide{width:100%; padding:14px 16px; border-radius:14px}
 
 /* File button */
@@ -114,7 +124,7 @@ body{
   border:1px solid var(--border); border-radius:12px; padding:12px;
   background:#fff;
 }
-.note-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px}
+.note-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px}
 .note-meta{font-size:12px; color:#6b7280}
 .note-text{margin:0; font-size:14px; line-height:1.45; color:var(--text)}
 
@@ -124,18 +134,19 @@ body{
 .photo img{width:100%; height:100%; object-fit:cover; display:block}
 .photo .del{
   position:absolute; top:6px; right:6px; background:rgba(0,0,0,.6); color:#fff;
-  border:none; border-radius:999px; width:24px; height:24px; font-size:14px; cursor:pointer;
+  border:none; border-radius:999px; width:28px; height:28px; font-size:16px; cursor:pointer;
 }
 
 /* Chart wrapper */
 .chart-wrap{
   background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:10px; overflow:hidden;
 }
+#curveChart{width:100%; height:auto; display:block}
 
 /* Toast */
 .toast{
   position:fixed; left:50%; transform:translateX(-50%);
-  bottom:92px; z-index:25;
+  bottom:calc(92px + env(safe-area-inset-bottom)); z-index:25;
   background:#ffffff; color:var(--text); border:1px solid var(--border);
   padding:10px 14px; border-radius:999px; opacity:0; pointer-events:none;
   box-shadow:var(--shadow);
@@ -161,8 +172,8 @@ body{
 .form{display:flex; flex-direction:column; gap:10px; text-align:left; margin-top:8px}
 .form-label{font-size:12px; color:#6b7280}
 .input,.textarea{
-  width:100%; border:1px solid var(--border); border-radius:10px; padding:10px 12px;
-  background:#fff; color:var(--text); font-size:14px;
+  width:100%; border:1px solid var(--border); border-radius:10px; padding:12px;
+  background:#fff; color:var(--text); font-size:15px;
 }
 .input:focus,.textarea:focus{outline:2px solid var(--accent); outline-offset:2px}
 .form-actions{display:flex; gap:8px; justify-content:flex-end; margin-top:12px}
@@ -171,7 +182,8 @@ body{
 .footer{
   position:fixed; left:0; right:0; bottom:0; background:#ffffff;
   border-top:1px solid var(--border);
-  padding:10px 14px; z-index:20;
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  z-index:20;
 }
 
 /* Links */
@@ -188,4 +200,10 @@ a:hover{text-decoration:underline}
 @media (max-width:420px){
   .row{padding:10px}
   .photos{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Orta+ ekranlarda yazı boyutunu çok büyütmeden iki kolona izin ver */
+@media (min-width:700px){
+  .grid{grid-template-columns:1fr 1fr}
+  .grid .row{min-height:48px}
 }
